@@ -50,6 +50,7 @@ defmodule Hidraw do
 
   def handle_info({_, {:data, <<?d, message::binary>>}}, state) do
     {:descriptor, descriptor} = :erlang.binary_to_term(message)
+    send state.callback,  {:hidraw, state.name, {:report_descriptor, descriptor}}
     {:noreply, %{state | report_desc: descriptor}}
   end
 
@@ -65,7 +66,6 @@ defmodule Hidraw do
   end
 
   defp handle_port({:data, value}, state) do
-    value |> IO.inspect
     send state.callback,  {:hidraw, state.name, value}
     {:noreply, state}
   end
