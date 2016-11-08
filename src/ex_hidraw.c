@@ -34,6 +34,7 @@
 #include "hidraw_enum.h"
 
 static const char notification_id = 'n';
+static const char descriptor_id = 'd';
 static const char error_id = 'e';
 
 void device_handle_request(const char *req, void *cookie) {
@@ -43,10 +44,10 @@ void device_handle_request(const char *req, void *cookie) {
 void device_process(int fd) {
   debug("Read");
   int i, res = 0;
-  char buf[256];
+  char buf[1024];
 
   /* Get a report from the device */
-  res = read(fd, buf, 16);
+  res = read(fd, buf, 1024);
   if (res < 0) {
     debug("read");
   } else {
@@ -108,15 +109,22 @@ static int open_device(char *dev) {
     res = ioctl(fd, HIDIOCGRDESC, &rpt_desc);
     if (res < 0) {
       perror("HIDIOCGRDESC");
-    } else {
-      debug("Report Descriptor:\n");
-    for (i = 0; i < rpt_desc.size; i++)
-      debug("%hhx ", rpt_desc.value[i]);
-      puts("\n");
     }
+
+    debug("%s ", rpt_desc.value);
 
   struct erlcmd handler;
   erlcmd_init(&handler, device_handle_request, &fd);
+
+  char resp[desc_size * 64];
+  int resp_index = sizeof(uint16_t); // Space for payload size
+  resp[resp_index++] = descriptor_id;
+  ei_encode_version(resp, &resp_index);
+  ei_encode_tuple_header(resp, &resp_index, 2);
+  ei_encode_atom(resp, &resp_index, "descriptor");
+
+  ei_encode_binary(resp, &resp_index, rpt_desc.value, desc_size);
+  erlcmd_send(resp, resp_index);
 
   for (;;) {
     struct pollfd fdset[2];

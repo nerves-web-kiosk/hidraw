@@ -22,6 +22,10 @@ defmodule Hidraw do
     end
   end
 
+  def report_descriptor(pid, timeout \\ 5000) do
+    GenServer.call(pid, :report_desc, timeout)
+  end
+
   def init([fd, caller]) do
     executable = :code.priv_dir(:hidraw) ++ '/ex_hidraw'
     port = Port.open({:spawn_executable, executable},
@@ -30,14 +34,23 @@ defmodule Hidraw do
         :use_stdio,
         :binary,
         :exit_status])
-    state = %{port: port, name: fd, callback: caller, buffer: []}
+    state = %{port: port, name: fd, callback: caller, buffer: [], report_desc: nil}
 
     {:ok, state}
+  end
+
+  def handle_call(:report_desc, _from, s) do
+    {:reply, {:ok, s.report_desc}, s}
   end
 
   def handle_info({_, {:data, <<?n, message::binary>>}}, state) do
     msg = :erlang.binary_to_term(message)
     handle_port(msg, state)
+  end
+
+  def handle_info({_, {:data, <<?d, message::binary>>}}, state) do
+    {:descriptor, descriptor} = :erlang.binary_to_term(message)
+    {:noreply, %{state | report_desc: descriptor}}
   end
 
   def handle_info({_, {:data, <<?e, message::binary>>}}, state) do
@@ -46,7 +59,13 @@ defmodule Hidraw do
     {:stop, error, state}
   end
 
+  def handle_info({_, {:exit_status, status}}, state) do
+    send state.callback,  {:hidraw, state.name, {:exit, status}}
+    {:stop, {:exit, status}, state}
+  end
+
   defp handle_port({:data, value}, state) do
+    value |> IO.inspect
     send state.callback,  {:hidraw, state.name, value}
     {:noreply, state}
   end

@@ -28,7 +28,7 @@ LDFLAGS +=
 CFLAGS += -std=gnu99
 
 # Enable for debug messages
-CFLAGS += -DDEBUG
+# CFLAGS += -DDEBUG
 
 CC ?= $(CROSSCOMPILER)gcc
 
