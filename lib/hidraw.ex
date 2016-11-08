@@ -47,7 +47,7 @@ defmodule Hidraw do
   end
 
   defp handle_port({:data, value}, state) do
-    IO.puts "Received Data: #{inspect value}"
+    send state.callback,  {:hidraw, state.name, value}
     {:noreply, state}
   end
 end
