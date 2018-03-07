@@ -50,13 +50,17 @@ CC ?= $(CROSSCOMPILER)gcc
 SRC=$(wildcard src/*.c)
 OBJ=$(SRC:.c=.o)
 
-# If not cross-compiling, then run sudo by default
 ifeq ($(origin CROSSCOMPILE), undefined)
 SUDO_ASKPASS ?= /usr/bin/ssh-askpass
 SUDO ?= sudo
+
+# If not cross-compiling, then run sudo and suid the port binary
+# so that it's possible to debug
+update_perms = \
+	SUDO_ASKPASS=$(SUDO_ASKPASS) $(SUDO) -- sh -c 'chown root:root $(1); chmod +s $(1)'
 else
 # If cross-compiling, then permissions need to be set some build system-dependent way
-SUDO ?= true
+update_perms =
 endif
 
 .PHONY: all clean
@@ -71,8 +75,7 @@ priv:
 
 priv/ex_hidraw: $(OBJ)
 	$(CC) $^ $(ERL_LDFLAGS) $(LDFLAGS) -o $@
-	# setuid root uevent so that it can interact with the netlink
-	SUDO_ASKPASS=$(SUDO_ASKPASS) $(SUDO) -- sh -c 'chown root:root $@; chmod +s $@'
+	$(call update_perms, $@)
 
 clean:
 	rm -f priv/ex_hidraw src/*.o

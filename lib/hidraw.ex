@@ -7,18 +7,22 @@ defmodule Hidraw do
 
   def enumerate() do
     executable = :code.priv_dir(:hidraw) ++ '/ex_hidraw'
-    port = Port.open({:spawn_executable, executable},
-      [{:args, ["enumerate"]},
+
+    port =
+      Port.open({:spawn_executable, executable}, [
+        {:args, ["enumerate"]},
         {:packet, 2},
         :use_stdio,
-        :binary])
+        :binary
+      ])
+
     receive do
       {^port, {:data, <<?r, message::binary>>}} ->
         :erlang.binary_to_term(message)
     after
-        5_000 ->
-          Port.close(port)
-          []
+      5_000 ->
+        Port.close(port)
+        []
     end
   end
 
@@ -28,12 +32,16 @@ defmodule Hidraw do
 
   def init([fd, caller]) do
     executable = :code.priv_dir(:hidraw) ++ '/ex_hidraw'
-    port = Port.open({:spawn_executable, executable},
-      [{:args, [fd]},
+
+    port =
+      Port.open({:spawn_executable, executable}, [
+        {:args, [fd]},
         {:packet, 2},
         :use_stdio,
         :binary,
-        :exit_status])
+        :exit_status
+      ])
+
     state = %{port: port, name: fd, callback: caller, buffer: [], report_desc: nil}
 
     {:ok, state}
@@ -50,23 +58,23 @@ defmodule Hidraw do
 
   def handle_info({_, {:data, <<?d, message::binary>>}}, state) do
     {:descriptor, descriptor} = :erlang.binary_to_term(message)
-    send state.callback,  {:hidraw, state.name, {:report_descriptor, descriptor}}
+    send(state.callback, {:hidraw, state.name, {:report_descriptor, descriptor}})
     {:noreply, %{state | report_desc: descriptor}}
   end
 
   def handle_info({_, {:data, <<?e, message::binary>>}}, state) do
     error = :erlang.binary_to_term(message)
-    send state.callback,  {:hidraw, state.name, error}
+    send(state.callback, {:hidraw, state.name, error})
     {:stop, error, state}
   end
 
   def handle_info({_, {:exit_status, status}}, state) do
-    send state.callback,  {:hidraw, state.name, {:exit, status}}
+    send(state.callback, {:hidraw, state.name, {:exit, status}})
     {:stop, {:exit, status}, state}
   end
 
   defp handle_port({:data, value}, state) do
-    send state.callback,  {:hidraw, state.name, value}
+    send(state.callback, {:hidraw, state.name, value})
     {:noreply, state}
   end
 end

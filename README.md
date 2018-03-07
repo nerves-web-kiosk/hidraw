@@ -2,22 +2,46 @@
 
 Hidraw is an Elixir interface to Linux hidraw devices.
 
-## Installation
+## Usage
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+Hidraw can be used to monitor `/dev/hidraw*` devices and report raw data to
+the parent process.
 
-  1. Add `hidraw` to your list of dependencies in `mix.exs`:
+Start by looking for the device you want to monitor.
 
-    ```elixir
-    def deps do
-      [{:hidraw, "~> 0.1.0"}]
-    end
-    ```
+```elixir
+iex> Hidraw.enumerate
+[
+  {"/dev/hidraw2", "ﾩSymbol Technologies, Inc, 2002 Symbol Bar Code Scanner"},
+  {"/dev/hidraw1", "DLL082A:01 06CB:76AF"},
+  {"/dev/hidraw0", "ELAN Touchscreen"}
+]
+```
 
-  2. Ensure `hidraw` is started before your application:
+Here we have a Barcode scanner at `/dev/hidraw2`, lets open it.
 
-    ```elixir
-    def application do
-      [applications: [:hidraw]]
-    end
-    ```
+```elixir
+iex> Hidraw.start_link "/dev/hidraw2"
+{:ok, #PID<0.197.0>}
+```
+
+The first message we will receive is the device's report descriptor
+
+```elixir
+iex> flush
+{:hidraw, "/dev/hidraw2",
+ {:report_descriptor,
+  <<6, 69, 255, 10, 0, 75, 161, 1, 10, 1, 74, 117, 8, 149, 11, 21, 0, 38, 255,
+    0, 145, 2, 10, 2, 74, 149, 64, 129, 2, 192>>}}
+```
+
+All subsequent messages will be triggered off device events.
+Here I am scanning a barcode:
+
+```elixir
+iex(4)> flush
+{:hidraw, "/dev/hidraw2",
+ <<16, 16, 3, 0, 65, 67, 67, 49, 55, 49, 49, 50, 79, 0, 24, 11, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   ...>>}
+```
