@@ -1,6 +1,12 @@
-#Hidraw
+# Hidraw
 
-#v0.1.1
+## v0.2.0
+
+* Enhancements
+  * Format code.
+  * Publish to hex
+
+## v0.1.1
 
 * Enhancements
   * Fixed warnings
