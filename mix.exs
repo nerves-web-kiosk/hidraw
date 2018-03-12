@@ -6,7 +6,7 @@ defmodule Hidraw.MixProject do
   def project do
     [
       app: @app,
-      version: "0.2.0",
+      version: "0.2.1",
       elixir: "~> 1.4",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -37,8 +37,10 @@ defmodule Hidraw.MixProject do
   defp package do
     [
       maintainers: ["Justin Schneck"],
+      files: ["lib", "LICENSE", "mix.exs", "README.md", "src/*.[ch]", "Makefile"],
       licenses: ["Apache 2.0"],
       links: %{"Github" => "https://github.com/letoteteam/#{@app}"}
     ]
   end
+
 end

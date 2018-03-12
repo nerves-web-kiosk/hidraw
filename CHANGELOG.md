@@ -1,5 +1,10 @@
 # Hidraw
 
+## v0.2.1
+
+* Bug Fixes
+  * Update files in hex package
+
 ## v0.2.0
 
 * Enhancements
