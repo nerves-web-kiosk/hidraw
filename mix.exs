@@ -12,6 +12,7 @@ defmodule Hidraw.MixProject do
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
+      make_targets: ["all"],
       make_clean: ["clean"],
       compilers: [:elixir_make | Mix.compilers()],
       deps: deps(),
@@ -25,7 +26,7 @@ defmodule Hidraw.MixProject do
 
   defp deps do
     [
-      {:elixir_make, "~> 0.3"},
+      {:elixir_make, "~> 0.6"},
       {:ex_doc, "~> 0.18", only: :dev}
     ]
   end
@@ -36,11 +37,9 @@ defmodule Hidraw.MixProject do
 
   defp package do
     [
-      maintainers: ["Justin Schneck"],
       files: ["lib", "LICENSE", "mix.exs", "README.md", "src/*.[ch]", "Makefile"],
       licenses: ["Apache 2.0"],
       links: %{"Github" => "https://github.com/letoteteam/#{@app}"}
     ]
   end
-
 end
