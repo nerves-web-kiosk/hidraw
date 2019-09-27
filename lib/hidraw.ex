@@ -6,7 +6,7 @@ defmodule Hidraw do
   end
 
   def enumerate() do
-    executable = :code.priv_dir(:hidraw) ++ '/ex_hidraw'
+    executable = :code.priv_dir(:hidraw) ++ '/hidraw'
 
     port =
       Port.open({:spawn_executable, executable}, [
@@ -31,7 +31,7 @@ defmodule Hidraw do
   end
 
   def init([fd, caller]) do
-    executable = :code.priv_dir(:hidraw) ++ '/ex_hidraw'
+    executable = :code.priv_dir(:hidraw) ++ '/hidraw'
 
     port =
       Port.open({:spawn_executable, executable}, [

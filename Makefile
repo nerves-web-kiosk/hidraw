@@ -8,6 +8,9 @@
 # LDFLAGS	linker flags for linking all binaries
 # ERL_LDFLAGS	additional linker flags for projects referencing Erlang libraries
 
+PREFIX = $(MIX_APP_PATH)/priv
+BUILD  = $(MIX_APP_PATH)/obj
+
 # Look for the EI library and header files
 # For crosscompiled builds, ERL_EI_INCLUDE_DIR and ERL_EI_LIBDIR must be
 # passed into the Makefile.
@@ -20,11 +23,10 @@ ifeq ($(CROSSCOMPILE),)
         $(warning this should be done automatically.)
         $(warning .)
         $(warning Skipping C compilation unless targets explicitly passed to make.)
-	  DEFAULT_TARGETS = priv
+	  DEFAULT_TARGETS = $(PREFIX)
     endif
 endif
-
-DEFAULT_TARGETS ?= priv priv/ex_hidraw
+DEFAULT_TARGETS ?= $(PREFIX) $(PREFIX)/hidraw
 
 ifeq ($(ERL_EI_INCLUDE_DIR),)
 ERL_ROOT_DIR = $(shell erl -eval "io:format(\"~s~n\", [code:root_dir()])" -s init stop -noshell)
@@ -47,35 +49,44 @@ CFLAGS += -std=gnu99
 
 CC ?= $(CROSSCOMPILER)gcc
 
-SRC=$(wildcard src/*.c)
-OBJ=$(SRC:.c=.o)
-
 ifeq ($(origin CROSSCOMPILE), undefined)
 SUDO_ASKPASS ?= /usr/bin/ssh-askpass
-SUDO ?= sudo
+SUDO ?= true
 
 # If not cross-compiling, then run sudo and suid the port binary
 # so that it's possible to debug
 update_perms = \
+	echo "Not crosscompiling. To test locally, the port binary needs extra permissions.";\
+	echo "Set SUDO=sudo to set permissions. The default is to skip this step.";\
+	echo "SUDO_ASKPASS=$(SUDO_ASKPASS)";\
+	echo "SUDO=$(SUDO)";\
 	SUDO_ASKPASS=$(SUDO_ASKPASS) $(SUDO) -- sh -c 'chown root:root $(1); chmod +s $(1)'
 else
 # If cross-compiling, then permissions need to be set some build system-dependent way
 update_perms =
 endif
 
-.PHONY: all clean
+SRC=$(wildcard src/*.c)
+OBJ=$(SRC:src/%.c=$(BUILD)/%.o)
 
-all: $(DEFAULT_TARGETS)
+calling_from_make:
+	mix compile
 
-%.o: %.c
+all: install
+
+install: $(BUILD) $(DEFAULT_TARGETS)
+
+$(BUILD)/%.o: src/%.c
 	$(CC) -c $(ERL_CFLAGS) $(CFLAGS) -o $@ $<
 
-priv:
-	mkdir -p priv
-
-priv/ex_hidraw: $(OBJ)
+$(PREFIX)/hidraw: $(OBJ)
 	$(CC) $^ $(ERL_LDFLAGS) $(LDFLAGS) -o $@
 	$(call update_perms, $@)
 
+$(PREFIX) $(BUILD):
+	mkdir -p $@
+
 clean:
-	rm -f priv/ex_hidraw src/*.o
+	$(RM) $(PREFIX)/hidraw $(BUILD)/*.o
+
+.PHONY: all clean calling_from_make install
